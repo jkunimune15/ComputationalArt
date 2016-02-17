@@ -302,9 +302,9 @@ def generate_movie(filename, x_size=300, y_size=300, t_size=100):
         x_size, y_size: optional args to set image dimensions (default: 350)
     """
     # Functions for red, green, and blue channels - where the magic happens!
-    red_function = build_random_function(7,9,[["x"],["y"],["t"],["t"]])
-    green_function = build_random_function(7,9,[["x"],["y"],["t"],["t"]])
-    blue_function = build_random_function(7,9,[["x"],["y"],["t"],["t"]])
+    red_function = build_random_function(8,10,[["x"],["y"],["t"]])
+    green_function = build_random_function(8,10,[["x"],["y"],["t"]])
+    blue_function = build_random_function(8,10,[["x"],["y"],["t"]])
 
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
@@ -329,7 +329,7 @@ def generate_movie(filename, x_size=300, y_size=300, t_size=100):
         im.save(filename+tee+".png")
 
 
-def generate_parametric_art(filename, x_size=800, y_size=800):
+def generate_parametric_art(filename, x_size=1000, y_size=1000):
     """ Generate computational art and save as an image file.
 
         filename: string filename for image (should be .png)
@@ -424,14 +424,16 @@ if __name__ == '__main__':
     doctest.testmod()
 
     # Create some computational art!
-    #i = 0
+    #i = 1
     #while True:
-    	#enerate_art("myArt"+str(i))
-    	#generate_parametric_art("myArtPara"+str(i))
-    	#generate_movie("frame")
-    	#generate_art_HSV("myArtHSV"+str(i))
-    	#generate_movie_from_sound("frame","ImperialMarch.wav")
+    	#generate_art(str(i)+"myArt")
+    	#generate_parametric_art(str(i)+"myArtPara")
+    	#if i%5 == 0:
+   	generate_movie("frame")
+    	#generate_art_HSV(str(i)+"myArtHSV")
+    	#if i%20 == 0:
+    	#	generate_movie_from_sound(str(i)+"frame","ImperialMarch.wav")
     	#i = i+1
 
-    generate_art("myArt")
+    #generate_art("myArt")
     print "Done!"
