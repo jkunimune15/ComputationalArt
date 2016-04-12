@@ -4,7 +4,7 @@ import random
 import numpy
 from PIL import Image
 from math import *
-from random import *
+from random import choice
 from colorsys import *
 from pylab import*
 from scipy.io import wavfile
@@ -22,7 +22,12 @@ def build_random_function(min_depth, max_depth, varis=[["x"],["y"]]):
                  these functions)
     """
     if max_depth <= 0 or random() < -min_depth/5.0:    # it will simpy return a variable if it has hit the max depth or if it is past the min depth
-        return choice(varis)
+        variableOfChoice = choice(varis)
+        if variableOfChoice[0] == "t":
+            return [choice(["sin","cos"]), variableOfChoice, choice([3, 5, 7, 10, 23])]
+        else:
+            return variableOfChoice
+
     else:    # return an actual function
         r = random()*10.0    # the variable that will decide which function to pick
         if r < 1.0:
@@ -63,7 +68,7 @@ def build_random_function(min_depth, max_depth, varis=[["x"],["y"]]):
             return ["pow", build_random_function(min_depth-1,max_depth-1,varis), build_random_function(min_depth-1,max_depth-1,varis)]
 
 
-def evaluate(f, x, y, z=None):
+def evaluate(f, x, y, z=None, t=None):
     """
     evaluates a function over a set of points
     f = a list representing the function
@@ -79,43 +84,49 @@ def evaluate(f, x, y, z=None):
         ans = y
     elif f[0] == "z":
         ans = z
+    elif f[0] == "t":
+        ans = t
     elif f[0] == "prod":
-        ans = evaluate(f[1],x,y,z=z) * evaluate(f[2],x,y,z=z)
+        ans = evaluate(f[1],x,y,z=z,t=t) * evaluate(f[2],x,y,z=z,t=t)
     elif f[0] == "avg":
-        ans = 0.5*(evaluate(f[1],x,y,z=z) + evaluate(f[2],x,y,z=z))
+        ans = 0.5*(evaluate(f[1],x,y,z=z,t=t) + evaluate(f[2],x,y,z=z,t=t))
+    elif f[0] == "cos":
+        ans = np.cos(evaluate(f[1],x,y,z=z,t=t) * f[2])
+    elif f[0] == "sin":
+        ans = np.sin(evaluate(f[1],x,y,z=z,t=t) * f[2])
     elif f[0] == "cos_pi":
-        ans = np.cos(pi * evaluate(f[1],x,y,z=z))
+        ans = np.cos(pi * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "sin_pi":
-        ans = np.sin(pi * evaluate(f[1],x,y,z=z))
+        ans = np.sin(pi * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "cos_4":
-        ans = np.cos(4 * evaluate(f[1],x,y,z=z))
+        ans = np.cos(4 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "sin_4":
-        ans = np.sin(4 * evaluate(f[1],x,y,z=z))
+        ans = np.sin(4 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "cos_30":
-        ans = np.cos(30 * evaluate(f[1],x,y,z=z))
+        ans = np.cos(30 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "sin_30":
-        ans = np.sin(30 * evaluate(f[1],x,y,z=z))
+        ans = np.sin(30 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "tan_pi/4":
-        ans = np.tan(pi/4.0 * evaluate(f[1],x,y,z=z))
+        ans = np.tan(pi/4.0 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "neg":
-        ans = np.negative(evaluate(f[1],x,y,z=z))
+        ans = np.negative(evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "square":
-        ans = np.square(evaluate(f[1],x,y,z=z))
+        ans = np.square(evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "cube":
-        ans = np.power(evaluate(f[1],x,y,z=z), 3)
+        ans = np.power(evaluate(f[1],x,y,z=z,t=t), 3)
     elif f[0] == "square_root":
-        ans = evaluate(f[1],x,y,z=z)
+        ans = evaluate(f[1],x,y,z=z,t=t)
         ans = np.copysign(np.sqrt(np.absolute(ans)), ans)
     elif f[0] == "lnabs":
-        ans = np.log(np.absolute(evaluate(f[1],x,y,z=z))+1) / log(2)
+        ans = np.log(np.absolute(evaluate(f[1],x,y,z=z,t=t))+1) / log(2)
     elif f[0] == "abs":
-        ans = np.absolute(evaluate(f[1],x,y,z=z)) *2-1
+        ans = np.absolute(evaluate(f[1],x,y,z=z,t=t)) *2-1
     elif f[0] == "hypot":
-        ans = np.hypot(evaluate(f[1],x,y,z=z), evaluate(f[2],x,y,z=z)) *sqrt(2)-1
+        ans = np.hypot(evaluate(f[1],x,y,z=z,t=t), evaluate(f[2],x,y,z=z,t=t)) *sqrt(2)-1
     elif f[0] == "pow":
-        ans = np.power(evaluate(f[1],x,y,z=z), np.floor(10*np.absolute(evaluate(f[2],x,y,z=z))))
+        ans = np.power(evaluate(f[1],x,y,z=z,t=t), np.floor(10*np.absolute(evaluate(f[2],x,y,z=z,t=t))))
     elif f[0] == "copysign":
-        ans = np.copysign(evaluate(f[1],x,y,z=z), evaluate(f[2],x,y,z=z))
+        ans = np.copysign(evaluate(f[1],x,y,z=z,t=t), evaluate(f[2],x,y,z=z,t=t))
     else:
         raise TypeError(f[0]+" is not a supported function!")
 
@@ -174,7 +185,7 @@ def color_map(val):
     return int(color_code)
 
 
-def build_x_coordinates(w,h):
+def build_x_coordinates(w,h,d=1):
     """
     bulids a numpy array representing a coordinate system
     w,h = integers representing the dimensions of the array
@@ -187,15 +198,21 @@ def build_x_coordinates(w,h):
 
     """
     basicArray = []
-    for y in range(h):
-        row = []
-        for x in range(w):
-            row.append(x*2.0/(w-1)-1)
-        basicArray.append(row)
-    return np.array(basicArray)
+    for z in range(d):
+        level = []
+        for y in range(h):
+            row = []
+            for x in range(w):
+                row.append(x*2.0/(w-1)-1)
+            level.append(row)
+        basicArray.append(level)
+    if d > 1:
+        return np.array(basicArray)
+    else:
+        return np.array(basicArray[0])
 
 
-def build_y_coordinates(w,h):
+def build_y_coordinates(w,h,d=1):
     """
     bulids a numpy array representing a coordinate system
     w,h = integers representing the dimensions of the array
@@ -207,43 +224,76 @@ def build_y_coordinates(w,h):
            [ 1.,  1.,  1.]])
     """
     basicArray = []
-    for y in range(h):
-        row = []
-        for x in range(w):
-            row.append(y*2.0/(h-1)-1)
-        basicArray.append(row)
+    for z in range(d):
+        level = []
+        for y in range(h):
+            row = []
+            for x in range(w):
+                row.append(y*2.0/(h-1)-1)
+            level.append(row)
+        basicArray.append(level)
+    if d > 1:
+        return np.array(basicArray)
+    else:
+        return np.array(basicArray[0])
+
+
+def build_t_coordinates(w,h,d=1):
+    """
+    bulids a numpy array representing a coordinate system
+    w,h = integers representing the dimensions of the array
+    returns a numpy array with dimensions w and h and values from -1.0 to 1.0
+
+    >>> build_t_coordinates(2,2,d=2)
+    array([[[-1., -1.],
+            [-1., -1.]],
+    <BLANKLINE>
+           [[ 1.,  1.],
+            [ 1.,  1.]]])
+    """
+    basicArray = []
+    for z in range(d):
+        level = []
+        for y in range(h):
+            row = []
+            for x in range(w):
+                row.append(z*2.0/(d-1)-1)
+            level.append(row)
+        basicArray.append(level)
     return np.array(basicArray)
 
 
-def generate_movie(filename, x_size=300, y_size=300, t_size=100):
+def generate_movie(filename, x_size=300, y_size=300, t_size=300):
     """ Generate computational art and save as an image file.
 
         filename: string filename for image (should be .png)
         x_size, y_size: optional args to set image dimensions (default: 350)
     """
     # Functions for red, green, and blue channels - where the magic happens!
-    red_function = build_random_function(8,10,[["x"],["y"],["t"]])
-    grn_function = build_random_function(8,10,[["x"],["y"],["t"]])
-    blu_function = build_random_function(8,10,[["x"],["y"],["t"]])
+    red_function = build_random_function(9,11,[["x"],["y"],["t"]])
+    grn_function = build_random_function(9,11,[["x"],["y"],["t"]])
+    blu_function = build_random_function(9,11,[["x"],["y"],["t"]])
     # Input arrays
-    x = build_x_coordinates(x_size, y_size)
-    y = build_y_coordinates(x_size, y_size)
-    # Create image and loop over all pixels
-    im = Image.new("RGB", (x_size, y_size))
-    pixels = im.load()
+    x = build_x_coordinates(x_size, y_size, t_size)
+    y = build_y_coordinates(x_size, y_size, t_size)
+    t = build_t_coordinates(x_size, y_size, t_size)
+    # Evaluate the functions
+    red_channel = evaluate(red_function, x, y, t=t)
+    grn_channel = evaluate(grn_function, x, y, t=t)
+    blu_channel = evaluate(blu_function, x, y, t=t)
     for k in range(t_size):
-        print(int(100.0*k/t_size)), ("%") # displays percentages
-
+        print(int(100.0*k/t_size))+1, ("%") # displays percentages
+        # Create image and loop over all pixels
+        im = Image.new("RGB", (x_size, y_size))
+        pixels = im.load()
         for i in range(x_size):
             for j in range(y_size):
-                x = remap_interval(i, 0, x_size, -1, 1)
-                y = remap_interval(j, 0, y_size, -1, 1)
-                t = remap_interval(k, 0, t_size, -1, 1)
                 pixels[i, j] = (
-                        color_map(evaluate(red_function, x, y, t)),
-                        color_map(evaluate(grn_function, x, y, t)),
-                        color_map(evaluate(blu_function, x, y, t))
-                        )
+                    color_map(red_channel[k,i,j]),
+                    color_map(grn_channel[k,i,j]),
+                    color_map(blu_channel[k,i,j])
+                    )
+        im.save(filename+"{:03d}.png".format(k))
 
         tee = str(k+1)
         while len(tee) < 3:
@@ -351,10 +401,10 @@ if __name__ == '__main__':
     # Create some computational art!
     i = 0
     while True:
-        generate_art(str(i)+"myArt")
-    	generate_parametric_art(str(i)+"myArtPara")
-    	generate_art_HSV(str(i)+"myArtHSV")
-    	#generate_movie("frame")
+        #generate_art(str(i)+"myArt")
+    	#generate_parametric_art(str(i)+"myArtPara")
+    	#generate_art_HSV(str(i)+"myArtHSV")
+    	generate_movie(str(i)+"frame")
     	i += 1
 
 print "Done!"
