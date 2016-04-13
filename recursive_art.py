@@ -1,12 +1,11 @@
-""" TODO: Put your header comment here """
+""" A file to generate random art with various algorithms """
 
 import random
-import numpy
+import numpy as np
 from PIL import Image
-from math import *
-from random import choice
-from colorsys import *
-from pylab import*
+import math
+import colorsys
+import pylab
 from scipy.io import wavfile
 
 
@@ -17,55 +16,32 @@ def build_random_function(min_depth, max_depth, varis=[["x"],["y"]]):
 
         min_depth: the minimum depth of the random function
         max_depth: the maximum depth of the random function
+        varis: the variables this function may incorporate
         returns: the randomly generated function represented as a nested list
                  (see assignment writeup for details on the representation of
                  these functions)
     """
-    if max_depth <= 0 or random() < -min_depth/5.0:    # it will simpy return a variable if it has hit the max depth or if it is past the min depth
-        variableOfChoice = choice(varis)
+    if max_depth <= 0 or random.random() < -min_depth/5.0:    # it will simpy return a variable if it has hit the max depth or if it is past the min depth
+        variableOfChoice = random.choice(varis)
         if variableOfChoice[0] == "t":
-            return [choice(["sin","cos"]), variableOfChoice, choice([3, 5, 7, 10, 23])]
+            return [random.choice(["sin","cos"]), variableOfChoice, random.choice([3, 5, 7, 10, 23])]
         else:
             return variableOfChoice
 
-    else:    # return an actual function
-        r = random()*10.0    # the variable that will decide which function to pick
-        if r < 1.0:
-            return ["prod", build_random_function(min_depth-1,max_depth-1,varis), build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 2.0:
-            return ["avg", build_random_function(min_depth-1,max_depth-1,varis), build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 2.7:
-            return ["sin_pi", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 3.4:
-            return ["cos_pi", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 3.9:
-            return ["cos_4", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 4.4:
-            return ["sin_4", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 4.7:
-            return ["cos_30", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 5.0:
-            return ["sin_30", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 5.5:
-            return ["tan_pi/4", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 6.0:
-            return ["neg", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 6.5:
-            return ["cube", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 7.0:
-            return ["square_root", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 7.5:
-            return ["lnabs", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 8.0:
-            return ["abs", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 8.5:
-            return ["hypot", build_random_function(min_depth-1,max_depth-1,varis), build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 9.4:
-            return ["square", build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 9.7:
-            return ["copysign", build_random_function(min_depth-1,max_depth-1,varis), build_random_function(min_depth-1,max_depth-1,varis)]
-        if r < 10.0:
-            return ["pow", build_random_function(min_depth-1,max_depth-1,varis), build_random_function(min_depth-1,max_depth-1,varis)]
+    else:    # return an actual function if there is still space        
+        possibilities = [(.1,"prod",2), (.1,"avg",2), (.07,"sin_pi",1), (.07,"cos_pi",1), (.06,"sin_4",1), (.06,"cos_4",1),
+            (.03,"sin_30",1), (.03,"cos_30",1), (.05,"tan_pi/4",1), (.05,"neg",1), (.05,"cube",1), (.05,"sqrt",1), (.05,"lnabs",1),
+            (.05,"abs",1), (.07,"hypot",2), (.05,"square",1), (.03,"copysign",2), (.03,"pow",2)]
+        r = random.random()    # the variable that will decide which function to pick
+        for prob, func, argNum in possibilities:
+            if r < prob:
+                output = [func]
+                for i in range(argNum):
+                    output.append(build_random_function(min_depth-1, max_depth-1, varis))
+                return output
+            else:
+                r -= prob  # if r was not high enough, decrement it to maintain probability for the next one
+        raise ArithmeticError("Probabilities of functions did not sum to 1!")
 
 
 def evaluate(f, x, y, z=None, t=None):
@@ -95,9 +71,9 @@ def evaluate(f, x, y, z=None, t=None):
     elif f[0] == "sin":
         ans = np.sin(evaluate(f[1],x,y,z=z,t=t) * f[2])
     elif f[0] == "cos_pi":
-        ans = np.cos(pi * evaluate(f[1],x,y,z=z,t=t))
+        ans = np.cos(math.pi * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "sin_pi":
-        ans = np.sin(pi * evaluate(f[1],x,y,z=z,t=t))
+        ans = np.sin(math.pi * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "cos_4":
         ans = np.cos(4 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "sin_4":
@@ -107,22 +83,22 @@ def evaluate(f, x, y, z=None, t=None):
     elif f[0] == "sin_30":
         ans = np.sin(30 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "tan_pi/4":
-        ans = np.tan(pi/4.0 * evaluate(f[1],x,y,z=z,t=t))
+        ans = np.tan(math.pi/4.0 * evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "neg":
         ans = np.negative(evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "square":
         ans = np.square(evaluate(f[1],x,y,z=z,t=t))
     elif f[0] == "cube":
         ans = np.power(evaluate(f[1],x,y,z=z,t=t), 3)
-    elif f[0] == "square_root":
+    elif f[0] == "sqrt":
         ans = evaluate(f[1],x,y,z=z,t=t)
         ans = np.copysign(np.sqrt(np.absolute(ans)), ans)
     elif f[0] == "lnabs":
-        ans = np.log(np.absolute(evaluate(f[1],x,y,z=z,t=t))+1) / log(2)
+        ans = np.log(np.absolute(evaluate(f[1],x,y,z=z,t=t))+1) / math.log(2)
     elif f[0] == "abs":
         ans = np.absolute(evaluate(f[1],x,y,z=z,t=t)) *2-1
     elif f[0] == "hypot":
-        ans = np.hypot(evaluate(f[1],x,y,z=z,t=t), evaluate(f[2],x,y,z=z,t=t)) *sqrt(2)-1
+        ans = np.hypot(evaluate(f[1],x,y,z=z,t=t), evaluate(f[2],x,y,z=z,t=t)) *math.sqrt(2)-1
     elif f[0] == "pow":
         ans = np.power(evaluate(f[1],x,y,z=z,t=t), np.floor(10*np.absolute(evaluate(f[2],x,y,z=z,t=t))))
     elif f[0] == "copysign":
@@ -293,7 +269,7 @@ def generate_movie(filename, x_size=300, y_size=300, t_size=300):
                     color_map(grn_channel[k,i,j]),
                     color_map(blu_channel[k,i,j])
                     )
-        im.save("New_Art/"+filename+"{:03d}.png".format(k))
+        im.save("New_Art/"+filename+"/frame"+"{:03d}.png".format(k))
 
 
 def generate_parametric_art(filename, x_size=1000, y_size=1000):
@@ -403,7 +379,7 @@ if __name__ == '__main__':
         generate_art(str(i)+"myArt")
     	#generate_parametric_art(str(i)+"myArtPara")
     	#generate_art_HSV(str(i)+"myArtHSV")
-    	#generate_movie(str(i)+"frame")
+    	#generate_movie(str(i)+"myFrames")
     	i += 1
 
 print "Done!"
