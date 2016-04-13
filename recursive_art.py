@@ -403,7 +403,7 @@ if __name__ == '__main__':
         generate_art(str(i)+"myArt")
     	#generate_parametric_art(str(i)+"myArtPara")
     	#generate_art_HSV(str(i)+"myArtHSV")
-    	#generate_movie(str(i)+"frame", x_size=100,y_size=100,t_size=100)
+    	#generate_movie(str(i)+"frame")
     	i += 1
 
 print "Done!"
