@@ -293,12 +293,7 @@ def generate_movie(filename, x_size=300, y_size=300, t_size=300):
                     color_map(grn_channel[k,i,j]),
                     color_map(blu_channel[k,i,j])
                     )
-        im.save(filename+"{:03d}.png".format(k))
-
-        tee = str(k+1)
-        while len(tee) < 3:
-            tee = "0"+tee
-        im.save(filename+tee+".png")
+        im.save("New_Art/"+filename+"{:03d}.png".format(k))
 
 
 def generate_parametric_art(filename, x_size=1000, y_size=1000):
@@ -311,7 +306,7 @@ def generate_parametric_art(filename, x_size=1000, y_size=1000):
     red_function = build_random_function(4,6,[["x"],["y"],["z"]])
     grn_function = build_random_function(4,6,[["x"],["y"],["z"]])
     blu_function = build_random_function(4,6,[["x"],["y"],["z"]])
-    par_function = build_random_function(3,5,[["x"],["y"]])
+    par_function = build_random_function(4,6,[["x"],["y"]])
     # Input arrays
     x = build_x_coordinates(x_size, y_size)
     y = build_y_coordinates(x_size, y_size)
@@ -322,7 +317,9 @@ def generate_parametric_art(filename, x_size=1000, y_size=1000):
     blu_channel = evaluate(blu_function, x, y, z=par_channel)
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
+    im2 = Image.new("L", (x_size, y_size))
     pixels = im.load()
+    pixel2 = im2.load()
     for i in range(x_size):
         for j in range(y_size):
             pixels[i, j] = (
@@ -330,7 +327,9 @@ def generate_parametric_art(filename, x_size=1000, y_size=1000):
                     color_map(grn_channel[i,j]),
                     color_map(blu_channel[i,j])
                     )
-    im.save(filename+".png")
+            pixel2[i, j] = color_map(par_channel[i,j])
+    im.save("New_Art/"+filename+".png")
+    im2.save("New_Art/"+filename+"_.png")
 
 
 def generate_art_HSV(filename, x_size=1000, y_size=1000):
@@ -361,7 +360,7 @@ def generate_art_HSV(filename, x_size=1000, y_size=1000):
                 (v_channel[i,j]+1)/2
                 )
             pixels[i, j] = (int(255*rgb_vals[0]), int(255*rgb_vals[1]), int(255*rgb_vals[2]))
-    im.save(filename+".png")
+    im.save("New_Art/"+filename+".png")
 
 
 def generate_art(filename, x_size=1000, y_size=1000):
@@ -391,7 +390,7 @@ def generate_art(filename, x_size=1000, y_size=1000):
                     color_map(grn_channel[i,j]),
                     color_map(blu_channel[i,j])
                     )
-    im.save(filename+".png")
+    im.save("New_Art/"+filename+".png")
 
 
 if __name__ == '__main__':
@@ -401,10 +400,10 @@ if __name__ == '__main__':
     # Create some computational art!
     i = 0
     while True:
-        #generate_art(str(i)+"myArt")
+        generate_art(str(i)+"myArt")
     	#generate_parametric_art(str(i)+"myArtPara")
     	#generate_art_HSV(str(i)+"myArtHSV")
-    	generate_movie(str(i)+"frame")
+    	#generate_movie(str(i)+"frame", x_size=100,y_size=100,t_size=100)
     	i += 1
 
 print "Done!"
