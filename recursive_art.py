@@ -5,108 +5,71 @@ import numpy as np
 from PIL import Image
 import math
 import colorsys
-import pylab
-from scipy.io import wavfile
+import os
 
 
-def build_random_function(min_depth, max_depth, varis=[["x"],["y"]]):
+def build_random_function(min_depth, max_depth, numVaris=2, time=False):
     """ Builds a random function of depth at least min_depth and depth
         at most max_depth (see assignment writeup for definition of depth
         in this context)
 
         min_depth: the minimum depth of the random function
         max_depth: the maximum depth of the random function
-        varis: the variables this function may incorporate
+        numVaris: the number of variables this function may incorporate
+        time: True if t represents time, False if it represents a parametric component or does not exist
         returns: the randomly generated function represented as a nested list
                  (see assignment writeup for details on the representation of
                  these functions)
     """
     if max_depth <= 0 or random.random() < -min_depth/5.0:    # it will simpy return a variable if it has hit the max depth or if it is past the min depth
-        variableOfChoice = random.choice(varis)
-        if variableOfChoice[0] == "t":
-            return [random.choice(["sin","cos"]), variableOfChoice, random.choice([3, 5, 7, 10, 23])]
+        n = random.randint(1,numVaris)
+
+        if time and n == 3:  # if there is a t
+            func = random.choice([np.sin,np.cos])
+            coef = random.choice([3, 5, 7, 10, 23])
+            return lambda x,y,t=0: func(t*coef)
         else:
-            return variableOfChoice
+            if n == 1:
+                return lambda x,y,t=0: x
+            if n == 2:
+                return lambda x,y,t=0: y
+            if n == 3:
+                return lambda x,y,t=0: t
 
-    else:    # return an actual function if there is still space        
-        possibilities = [(.1,"prod",2), (.1,"avg",2), (.07,"sin_pi",1), (.07,"cos_pi",1), (.06,"sin_4",1), (.06,"cos_4",1),
-            (.03,"sin_30",1), (.03,"cos_30",1), (.05,"tan_pi/4",1), (.05,"neg",1), (.05,"cube",1), (.05,"sqrt",1), (.05,"lnabs",1),
-            (.05,"abs",1), (.07,"hypot",2), (.05,"square",1), (.03,"copysign",2), (.03,"pow",2)]
+    else:                                                     # otherwise it will return an actual function
         r = random.random()    # the variable that will decide which function to pick
-        for prob, func, argNum in possibilities:
-            if r < prob:
-                output = [func]
-                for i in range(argNum):
-                    output.append(build_random_function(min_depth-1, max_depth-1, varis))
-                return output
-            else:
-                r -= prob  # if r was not high enough, decrement it to maintain probability for the next one
-        raise ArithmeticError("Probabilities of functions did not sum to 1!")
+        arg1 = build_random_function(min_depth-1,max_depth-1,numVaris,time)
+        if r < .33:
+            arg2 = build_random_function(min_depth-1,max_depth-1,numVaris,time)
 
-
-def evaluate(f, x, y, z=None, t=None):
-    """
-    evaluates a function over a set of points
-    f = a list representing the function
-    x, y, z, t = a numpy array of floats representing a coordinate system
-    returns a numpy array of floats in range [-1.0,1.0]
-
-    >>> evaluate(["avg", ["x"],["y"]], np.array([1.0, 0.0]), np.array([0.5, 0.5]))
-    array([ 0.75,  0.25])
-    """
-    if f[0] == "x":
-        ans = x
-    elif f[0] == "y":
-        ans = y
-    elif f[0] == "z":
-        ans = z
-    elif f[0] == "t":
-        ans = t
-    elif f[0] == "prod":
-        ans = evaluate(f[1],x,y,z=z,t=t) * evaluate(f[2],x,y,z=z,t=t)
-    elif f[0] == "avg":
-        ans = 0.5*(evaluate(f[1],x,y,z=z,t=t) + evaluate(f[2],x,y,z=z,t=t))
-    elif f[0] == "cos":
-        ans = np.cos(evaluate(f[1],x,y,z=z,t=t) * f[2])
-    elif f[0] == "sin":
-        ans = np.sin(evaluate(f[1],x,y,z=z,t=t) * f[2])
-    elif f[0] == "cos_pi":
-        ans = np.cos(math.pi * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "sin_pi":
-        ans = np.sin(math.pi * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "cos_4":
-        ans = np.cos(4 * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "sin_4":
-        ans = np.sin(4 * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "cos_30":
-        ans = np.cos(30 * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "sin_30":
-        ans = np.sin(30 * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "tan_pi/4":
-        ans = np.tan(math.pi/4.0 * evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "neg":
-        ans = np.negative(evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "square":
-        ans = np.square(evaluate(f[1],x,y,z=z,t=t))
-    elif f[0] == "cube":
-        ans = np.power(evaluate(f[1],x,y,z=z,t=t), 3)
-    elif f[0] == "sqrt":
-        ans = evaluate(f[1],x,y,z=z,t=t)
-        ans = np.copysign(np.sqrt(np.absolute(ans)), ans)
-    elif f[0] == "lnabs":
-        ans = np.log(np.absolute(evaluate(f[1],x,y,z=z,t=t))+1) / math.log(2)
-    elif f[0] == "abs":
-        ans = np.absolute(evaluate(f[1],x,y,z=z,t=t)) *2-1
-    elif f[0] == "hypot":
-        ans = np.hypot(evaluate(f[1],x,y,z=z,t=t), evaluate(f[2],x,y,z=z,t=t)) *math.sqrt(2)-1
-    elif f[0] == "pow":
-        ans = np.power(evaluate(f[1],x,y,z=z,t=t), np.floor(10*np.absolute(evaluate(f[2],x,y,z=z,t=t))))
-    elif f[0] == "copysign":
-        ans = np.copysign(evaluate(f[1],x,y,z=z,t=t), evaluate(f[2],x,y,z=z,t=t))
-    else:
-        raise TypeError(f[0]+" is not a supported function!")
-
-    return np.around(ans, 5) # rounds to 5 digits to make it be in bounds
+        if r < .10:
+            return lambda x,y,t=0: arg1(x,y,t) * arg2(x,y,t)
+        if r < .20:
+            return lambda x,y,t=0: (arg1(x,y,t) + arg2(x,y,t))/2.0
+        if r < .27:
+            return lambda x,y,t=0: np.hypot(arg1(x,y,t), arg2(x,y,t)) *math.sqrt(2)-1
+        if r < .30:
+            return lambda x,y,t=0: np.copysign(arg1(x,y,t), arg2(x,y,t))
+        if r < .33:
+            return lambda x,y,t=0: np.power(arg1(x,y,t), np.floor(10*np.absolute(arg2(x,y,t))))
+        if r < .49:
+            return lambda x,y,t=0: np.sin(arg1(x,y,t) * random.choice([math.pi, 3, 4, 5, 30]))
+        if r < .65:
+            return lambda x,y,t=0: np.cos(arg1(x,y,t) * random.choice([math.pi, 3, 4, 5, 30]))
+        if r < .70:
+            return lambda x,y,t=0: np.tan(arg1(x,y,t) * math.pi/4)
+        if r < .75:
+            return lambda x,y,t=0: np.negative(arg1(x,y,t))
+        if r < .80:
+            return lambda x,y,t=0: np.power(arg1(x,y,t), 3)
+        if r < .85:
+            return lambda x,y,t=0: ((lambda value: np.copysign(np.sqrt(np.absolute(value)), value))(arg1(x,y,t)))
+        if r < .90:
+            return lambda x,y,t=0: np.log(np.absolute(arg1(x,y,t))+1) /math.log(4)-1
+        if r < .95:
+            return lambda x,y,t=0: np.absolute(arg1(x,y,t)) *2-1
+        if r < 1.0:
+            return lambda x,y,t=0: np.square(arg1(x,y,t)) *2-1
 
 
 def remap_interval(val,
@@ -239,24 +202,28 @@ def build_t_coordinates(w,h,d=1):
     return np.array(basicArray)
 
 
-def generate_movie(filename, x_size=300, y_size=300, t_size=300):
+def generate_movie(filename, x_size=500, y_size=500, t_size=300):
     """ Generate computational art and save as an image file.
 
         filename: string filename for image (should be .png)
         x_size, y_size: optional args to set image dimensions (default: 350)
     """
     # Functions for red, green, and blue channels - where the magic happens!
-    red_function = build_random_function(9,11,[["x"],["y"],["t"]])
-    grn_function = build_random_function(9,11,[["x"],["y"],["t"]])
-    blu_function = build_random_function(9,11,[["x"],["y"],["t"]])
+    red_function = build_random_function(9,11, 3,True)
+    grn_function = build_random_function(9,11, 3,True)
+    blu_function = build_random_function(9,11, 3,True)
     # Input arrays
     x = build_x_coordinates(x_size, y_size, t_size)
     y = build_y_coordinates(x_size, y_size, t_size)
     t = build_t_coordinates(x_size, y_size, t_size)
     # Evaluate the functions
-    red_channel = evaluate(red_function, x, y, t=t)
-    grn_channel = evaluate(grn_function, x, y, t=t)
-    blu_channel = evaluate(blu_function, x, y, t=t)
+    red_channel = red_function(x, y, t)
+    grn_channel = grn_function(x, y, t)
+    blu_channel = blu_function(x, y, t)
+    # Creates a folder for these frames
+    if not os.path.exists("New_Art/"+filename+"/"):
+        os.makedirs("New_Art/"+filename+"/")
+
     for k in range(t_size):
         print(int(100.0*k/t_size))+1, ("%") # displays percentages
         # Create image and loop over all pixels
@@ -269,7 +236,7 @@ def generate_movie(filename, x_size=300, y_size=300, t_size=300):
                     color_map(grn_channel[k,i,j]),
                     color_map(blu_channel[k,i,j])
                     )
-        im.save("New_Art/"+filename+"/frame"+"{:03d}.png".format(k))
+        im.save("New_Art/"+filename+"/frame{:03d}.png".format(k))
 
 
 def generate_parametric_art(filename, x_size=1000, y_size=1000):
@@ -279,18 +246,18 @@ def generate_parametric_art(filename, x_size=1000, y_size=1000):
         x_size, y_size: optional args to set image dimensions (default: 350)
     """
     # Functions for red, green, and blue channels - where the magic happens!
-    red_function = build_random_function(4,6,[["x"],["y"],["z"]])
-    grn_function = build_random_function(4,6,[["x"],["y"],["z"]])
-    blu_function = build_random_function(4,6,[["x"],["y"],["z"]])
-    par_function = build_random_function(4,6,[["x"],["y"]])
+    red_function = build_random_function(4,6, numVaris=3)
+    grn_function = build_random_function(4,6, numVaris=3)
+    blu_function = build_random_function(4,6, numVaris=3)
+    par_function = build_random_function(4,6, numVaris=2)
     # Input arrays
     x = build_x_coordinates(x_size, y_size)
     y = build_y_coordinates(x_size, y_size)
     # Evaluate the functions
-    par_channel = evaluate(par_function, x, y)
-    red_channel = evaluate(red_function, x, y, z=par_channel)
-    grn_channel = evaluate(grn_function, x, y, z=par_channel)
-    blu_channel = evaluate(blu_function, x, y, z=par_channel)
+    par_channel = par_function(x, y)
+    red_channel = red_function(x, y, par_channel)
+    grn_channel = grn_function(x, y, par_channel)
+    blu_channel = blu_function(x, y, par_channel)
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
     im2 = Image.new("L", (x_size, y_size))
@@ -322,15 +289,15 @@ def generate_art_HSV(filename, x_size=1000, y_size=1000):
     x = build_x_coordinates(x_size, y_size)
     y = build_y_coordinates(x_size, y_size)
     # Evaluate the functions
-    h_channel = evaluate(h_function, x, y)
-    s_channel = evaluate(s_function, x, y)
-    v_channel = evaluate(v_function, x, y)
+    h_channel = h_function(x, y)
+    s_channel = s_function(x, y)
+    v_channel = v_function(x, y)
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
     pixels = im.load()
     for i in range(x_size):
         for j in range(y_size):
-            rgb_vals = hsv_to_rgb(
+            rgb_vals = colorsys.hsv_to_rgb(
                 (h_channel[i,j]+1)/2,
                 (s_channel[i,j]+1)/2,
                 (v_channel[i,j]+1)/2
@@ -353,9 +320,9 @@ def generate_art(filename, x_size=1000, y_size=1000):
     x = build_x_coordinates(x_size, y_size)
     y = build_y_coordinates(x_size, y_size)
     # Evaluate the functions
-    red_channel = evaluate(red_function, x, y)
-    grn_channel = evaluate(grn_function, x, y)
-    blu_channel = evaluate(blu_function, x, y)
+    red_channel = red_function(x, y)
+    grn_channel = grn_function(x, y)
+    blu_channel = blu_function(x, y)
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
     pixels = im.load()
@@ -377,9 +344,10 @@ if __name__ == '__main__':
     i = 0
     while True:
         generate_art(str(i)+"myArt")
-    	#generate_parametric_art(str(i)+"myArtPara")
-    	#generate_art_HSV(str(i)+"myArtHSV")
-    	#generate_movie(str(i)+"myFrames")
+        generate_art_HSV(str(i)+"myArtHSV")
+    	generate_parametric_art(str(i)+"myArtPara")
+        #if i%5 == 0:
+    	#   generate_movie(str(i)+"myFrames")
     	i += 1
 
 print "Done!"
